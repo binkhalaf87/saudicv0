@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 
 export function ResumePage() {
-  const { resumes, latestResume, uploadLoading, handleResumeUpload } = useAppContext();
+  const { resumes, latestResume, uploadLoading, handleResumeUpload, getResumePreviewUrl, deleteResume } = useAppContext();
   const navigate = useNavigate();
+  const [busyResumeId, setBusyResumeId] = useState<string | null>(null);
 
   return (
     <div className="card-stack">
@@ -28,9 +30,49 @@ export function ResumePage() {
       </div>
       <div className="info-card">
         <h4>السير الذاتية المرفوعة</h4>
-        <ul className="mini-list">
-          {resumes.length ? resumes.map((item) => <li key={item.id}>{item.file_name}</li>) : <li>لا توجد ملفات بعد.</li>}
-        </ul>
+        <div className="record-list">
+          {resumes.length ? (
+            resumes.map((item) => (
+              <div key={item.id} className="record-row">
+                <div>
+                  <strong>{item.file_name}</strong>
+                  <p className="record-meta">الحالة: {item.upload_status}</p>
+                </div>
+                <div className="record-actions">
+                  <button
+                    className="ghost-button small-button"
+                    type="button"
+                    disabled={busyResumeId === item.id}
+                    onClick={async () => {
+                      setBusyResumeId(item.id);
+                      const url = await getResumePreviewUrl(item.id);
+                      if (url) {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }
+                      setBusyResumeId(null);
+                    }}
+                  >
+                    معاينة الملف
+                  </button>
+                  <button
+                    className="ghost-button small-button danger-button"
+                    type="button"
+                    disabled={busyResumeId === item.id}
+                    onClick={async () => {
+                      setBusyResumeId(item.id);
+                      await deleteResume(item.id);
+                      setBusyResumeId(null);
+                    }}
+                  >
+                    حذف السيرة
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>لا توجد ملفات بعد.</p>
+          )}
+        </div>
       </div>
     </div>
   );

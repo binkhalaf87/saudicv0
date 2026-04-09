@@ -53,6 +53,9 @@ type AppContextValue = {
   setAuthForm: (updater: (current: AuthForm) => AuthForm) => void;
   setProfileDraft: (updater: (current: ProfileDraft) => ProfileDraft) => void;
   clearMessage: () => void;
+  getResumePreviewUrl: (resumeId: string) => Promise<string | null>;
+  deleteResume: (resumeId: string) => Promise<boolean>;
+  deleteAnalysis: (analysisId: string) => Promise<boolean>;
   handleAuthSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   handleSaveProfile: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   handleResumeUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<boolean>;
@@ -274,6 +277,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     setUploadLoading(true);
     setMessage('');
+    let createdResumeId: string | null = null;
 
     try {
       const fileExt = file.name.split('.').pop() ?? 'pdf';
@@ -308,6 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
 
       const resumeRecord = resumeInsert.data as ResumeRecord;
+      createdResumeId = resumeRecord.id;
       setResumes((current) => [resumeRecord, ...current]);
       setMessage('تم رفع الملف. جارٍ استخراج النص وإرسال السيرة إلى التحليل الذكي...');
 
@@ -338,6 +343,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setMessage('تم تحليل محتوى السيرة الذاتية فعليًا وحفظ النتيجة الذكية في قاعدة البيانات.');
       return true;
     } catch (error) {
+      if (createdResumeId) {
+        void supabase
+          .from('resumes')
+          .update({ upload_status: 'failed' })
+          .eq('id', createdResumeId)
+          .eq('user_id', session.user.id);
+
+        setResumes((current) =>
+          current.map((item) => (item.id === createdResumeId ? { ...item, upload_status: 'failed' } : item)),
+        );
+      }
       setMessage(error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء تحليل السيرة الذاتية.');
       return false;
     } finally {
@@ -355,6 +371,66 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       setMessage('تم تسجيل الخروج.');
     }
+  }
+
+  async function getResumePreviewUrl(resumeId: string) {
+    if (!supabase) return null;
+
+    const resume = resumes.find((item) => item.id === resumeId);
+    if (!resume) {
+      setMessage('تعذر العثور على السيرة الذاتية المطلوبة.');
+      return null;
+    }
+
+    const { data, error } = await supabase.storage.from('resumes').createSignedUrl(resume.file_path, 60);
+
+    if (error) {
+      setMessage(error.message);
+      return null;
+    }
+
+    return data.signedUrl;
+  }
+
+  async function deleteResume(resumeId: string) {
+    if (!supabase || !session?.user) return false;
+
+    const resume = resumes.find((item) => item.id === resumeId);
+    if (!resume) {
+      setMessage('تعذر العثور على السيرة الذاتية المطلوب حذفها.');
+      return false;
+    }
+
+    const { error: storageError } = await supabase.storage.from('resumes').remove([resume.file_path]);
+    if (storageError) {
+      setMessage(storageError.message);
+      return false;
+    }
+
+    const { error } = await supabase.from('resumes').delete().eq('id', resumeId).eq('user_id', session.user.id);
+    if (error) {
+      setMessage(error.message);
+      return false;
+    }
+
+    setResumes((current) => current.filter((item) => item.id !== resumeId));
+    setAnalyses((current) => current.filter((item) => item.resume_id !== resumeId));
+    setMessage('تم حذف السيرة الذاتية وما يرتبط بها من تحليل.');
+    return true;
+  }
+
+  async function deleteAnalysis(analysisId: string) {
+    if (!supabase || !session?.user) return false;
+
+    const { error } = await supabase.from('analyses').delete().eq('id', analysisId).eq('user_id', session.user.id);
+    if (error) {
+      setMessage(error.message);
+      return false;
+    }
+
+    setAnalyses((current) => current.filter((item) => item.id !== analysisId));
+    setMessage('تم حذف التحليل.');
+    return true;
   }
 
   const latestResume = resumes[0] ?? null;
@@ -394,6 +470,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAuthForm: (updater) => setAuthFormState((current) => updater(current)),
     setProfileDraft: (updater) => setProfileDraftState((current) => updater(current)),
     clearMessage: () => setMessage(''),
+    getResumePreviewUrl,
+    deleteResume,
+    deleteAnalysis,
     handleAuthSubmit,
     handleSaveProfile,
     handleResumeUpload,
