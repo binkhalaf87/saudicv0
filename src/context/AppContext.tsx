@@ -95,6 +95,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  async function invokeResumeAnalysis(payload: {
+    resumeId: string;
+    resumeText: string;
+    targetRole: string | null;
+  }) {
+    if (!supabase) {
+      throw new Error('Supabase غير مهيأ داخل التطبيق.');
+    }
+
+    const {
+      data: { session: activeSession },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      throw new Error(sessionError.message);
+    }
+
+    const accessToken = activeSession?.access_token ?? session?.access_token;
+
+    if (!accessToken) {
+      throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى ثم أعد محاولة التحليل.');
+    }
+
+    const invokeResult = await supabase.functions.invoke('analyze-resume', {
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (invokeResult.error) {
+      throw new Error(invokeResult.error.message);
+    }
+
+    return invokeResult.data;
+  }
+
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
@@ -333,19 +371,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
       }
 
-      const invokeResult = await supabase.functions.invoke('analyze-resume', {
-        body: {
+      const invokeData = await invokeResumeAnalysis({
           resumeId: resumeRecord.id,
           resumeText,
           targetRole: profile?.target_role ?? null,
-        },
       });
 
-      if (invokeResult.error) {
-        throw new Error(invokeResult.error.message);
-      }
-
-      const nextAnalysis = normalizeAnalysis(invokeResult.data.analysis as AnalysisRecord);
+      const nextAnalysis = normalizeAnalysis(invokeData.analysis as AnalysisRecord);
 
       setAnalyses((current) => [nextAnalysis, ...current.filter((item) => item.resume_id !== nextAnalysis.resume_id)]);
       setResumes((current) =>
@@ -457,19 +489,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
       }
 
-      const invokeResult = await supabase.functions.invoke('analyze-resume', {
-        body: {
+      const invokeData = await invokeResumeAnalysis({
           resumeId: resume.id,
           resumeText,
           targetRole: profile?.target_role ?? null,
-        },
       });
 
-      if (invokeResult.error) {
-        throw new Error(invokeResult.error.message);
-      }
-
-      const nextAnalysis = normalizeAnalysis(invokeResult.data.analysis as AnalysisRecord);
+      const nextAnalysis = normalizeAnalysis(invokeData.analysis as AnalysisRecord);
 
       setAnalyses((current) => [nextAnalysis, ...current.filter((item) => item.resume_id !== nextAnalysis.resume_id)]);
       setResumes((current) =>
