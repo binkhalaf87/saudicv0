@@ -54,6 +54,7 @@ type AppContextValue = {
   setProfileDraft: (updater: (current: ProfileDraft) => ProfileDraft) => void;
   clearMessage: () => void;
   getResumePreviewUrl: (resumeId: string) => Promise<string | null>;
+  analyzeResume: (resumeId: string) => Promise<boolean>;
   deleteResume: (resumeId: string) => Promise<boolean>;
   deleteAnalysis: (analysisId: string) => Promise<boolean>;
   handleAuthSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
@@ -402,6 +403,97 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return data.signedUrl;
   }
 
+  async function analyzeResume(resumeId: string) {
+    if (!supabase || !session?.user) return false;
+
+    const resume = resumes.find((item) => item.id === resumeId);
+    if (!resume) {
+      setMessage('تعذر العثور على السيرة الذاتية المطلوبة للتحليل.');
+      return false;
+    }
+
+    setUploadLoading(true);
+    setMessage('جارٍ تجهيز السيرة الذاتية لإعادة التحليل...');
+
+    try {
+      const { data, error } = await supabase.storage.from('resumes').download(resume.file_path);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const file = new File([data], resume.file_name, {
+        type: resume.mime_type ?? data.type ?? 'application/pdf',
+        lastModified: Date.now(),
+      });
+
+      const { error: processingError } = await supabase
+        .from('resumes')
+        .update({ upload_status: 'processing' })
+        .eq('id', resume.id)
+        .eq('user_id', session.user.id);
+
+      if (processingError) {
+        throw new Error(processingError.message);
+      }
+
+      setResumes((current) =>
+        current.map((item) => (item.id === resume.id ? { ...item, upload_status: 'processing' } : item)),
+      );
+
+      const resumeText = await extractResumeText(file, (status) => {
+        if (status === 'ocr-fallback') {
+          setMessage('الملف يبدو ممسوحًا ضوئيًا أو قديمًا. جارٍ محاولة OCR لاستخراج النص...');
+          return;
+        }
+
+        if (status.startsWith('ocr-page-')) {
+          const pageNumber = status.replace('ocr-page-', '');
+          setMessage(`جارٍ استخدام OCR لاستخراج النص من الصفحة ${pageNumber}...`);
+        }
+      });
+
+      if (!resumeText || resumeText.length < 80) {
+        throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
+      }
+
+      const invokeResult = await supabase.functions.invoke('analyze-resume', {
+        body: {
+          resumeId: resume.id,
+          resumeText,
+          targetRole: profile?.target_role ?? null,
+        },
+      });
+
+      if (invokeResult.error) {
+        throw new Error(invokeResult.error.message);
+      }
+
+      const nextAnalysis = normalizeAnalysis(invokeResult.data.analysis as AnalysisRecord);
+
+      setAnalyses((current) => [nextAnalysis, ...current.filter((item) => item.resume_id !== nextAnalysis.resume_id)]);
+      setResumes((current) =>
+        current.map((item) => (item.id === resume.id ? { ...item, upload_status: 'analyzed' } : item)),
+      );
+      setMessage('تم إنشاء تحليل جديد لهذه السيرة الذاتية بنجاح.');
+      return true;
+    } catch (error) {
+      void supabase
+        .from('resumes')
+        .update({ upload_status: 'failed' })
+        .eq('id', resume.id)
+        .eq('user_id', session.user.id);
+
+      setResumes((current) =>
+        current.map((item) => (item.id === resume.id ? { ...item, upload_status: 'failed' } : item)),
+      );
+      setMessage(error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء تحليل السيرة الذاتية.');
+      return false;
+    } finally {
+      setUploadLoading(false);
+    }
+  }
+
   async function deleteResume(resumeId: string) {
     if (!supabase || !session?.user) return false;
 
@@ -481,6 +573,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProfileDraft: (updater) => setProfileDraftState((current) => updater(current)),
     clearMessage: () => setMessage(''),
     getResumePreviewUrl,
+    analyzeResume,
     deleteResume,
     deleteAnalysis,
     handleAuthSubmit,

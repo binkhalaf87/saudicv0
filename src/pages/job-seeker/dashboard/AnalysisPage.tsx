@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../../context/AppContext';
 
 export function JobSeekerAnalysisPage() {
-  const { analyses, resumes, deleteAnalysis, getResumePreviewUrl } = useAppContext();
+  const { analyses, resumes, uploadLoading, analyzeResume, deleteAnalysis, getResumePreviewUrl } = useAppContext();
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ export function JobSeekerAnalysisPage() {
           <p className="eyebrow">مساحة التحليل</p>
           <h2>التحليلات السابقة والسير الذاتية غير المحللة في صفحة واحدة قابلة للإدارة.</h2>
           <p className="analysis-hero-copy">
-            اختر أي تحليل سابق لعرضه، أو راجع الملفات التي لم تنتج تحليلاً بعد لمعرفة حالتها أو معاينتها.
+            اختر أي تحليل سابق لعرضه، أو شغل التحليل مباشرة للسير التي لم تنتج نتيجة بعد.
           </p>
         </div>
         <div className="analysis-hero-metrics">
@@ -108,7 +108,7 @@ export function JobSeekerAnalysisPage() {
             ) : (
               <div className="empty-state-card">
                 <h4>لا توجد تحليلات محفوظة بعد</h4>
-                <p>ابدأ من صفحة السيرة الذاتية وارفع أول ملف لتظهر النتائج هنا.</p>
+                <p>ارفع سيرة ذاتية ثم شغل التحليل من نفس هذه الصفحة أو من صفحة السيرة الذاتية.</p>
               </div>
             )}
           </div>
@@ -146,6 +146,21 @@ export function JobSeekerAnalysisPage() {
                     <button
                       className="ghost-button small-button"
                       type="button"
+                      disabled={uploadLoading || resume.upload_status === 'processing'}
+                      onClick={async () => {
+                        const success = await analyzeResume(resume.id);
+                        if (success) {
+                          requestAnimationFrame(() => {
+                            detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          });
+                        }
+                      }}
+                    >
+                      {resume.upload_status === 'processing' ? 'جارٍ التحليل...' : 'تحليل الآن'}
+                    </button>
+                    <button
+                      className="ghost-button small-button"
+                      type="button"
                       onClick={() => navigate('/job-seeker/dashboard/resume')}
                     >
                       الذهاب للسير الذاتية
@@ -155,8 +170,8 @@ export function JobSeekerAnalysisPage() {
               ))
             ) : (
               <div className="empty-state-card success">
-                <h4>كل الملفات المحفوظة تمت معالجتها</h4>
-                <p>لا توجد سير ذاتية عالقة بدون تحليل في الوقت الحالي.</p>
+                <h4>كل الملفات المرفوعة تمت معالجتها</h4>
+                <p>لا توجد سيرة ذاتية معلقة بدون تحليل في الوقت الحالي.</p>
               </div>
             )}
           </div>
@@ -206,7 +221,7 @@ export function JobSeekerAnalysisPage() {
           </div>
         ) : (
           <div className="empty-state-card">
-            <h4>اختر تحليلًا لعرض التفاصيل</h4>
+            <h4>اختر تحليلاً لعرض التفاصيل</h4>
             <p>من قائمة التحليلات السابقة في الأعلى، اضغط على زر عرض التحليل لأي سيرة تريد مراجعتها.</p>
           </div>
         )}
