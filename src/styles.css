@@ -78,6 +78,10 @@ a {
   flex-wrap: wrap;
 }
 
+.topbar-links a.active {
+  color: #dd8a23;
+}
+
 .ghost-button,
 .primary-button,
 .menu-item {
@@ -317,6 +321,13 @@ a {
   background: rgba(255, 247, 231, 0.92);
 }
 
+.dismissible-notice {
+  display: block;
+  text-align: right;
+  width: min(1180px, calc(100% - 32px));
+  cursor: pointer;
+}
+
 .auth-layout {
   display: flex;
   justify-content: center;
@@ -324,6 +335,11 @@ a {
 
 .auth-card {
   width: min(520px, 100%);
+}
+
+.auth-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 24px auto 0;
 }
 
 .auth-tabs {
@@ -391,6 +407,7 @@ a {
 }
 
 .menu-item {
+  display: block;
   text-align: right;
   padding: 14px 16px;
   border-radius: 18px;
