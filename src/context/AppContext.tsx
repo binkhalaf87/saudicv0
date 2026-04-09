@@ -316,7 +316,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setResumes((current) => [resumeRecord, ...current]);
       setMessage('تم رفع الملف. جارٍ استخراج النص وإرسال السيرة إلى التحليل الذكي...');
 
-      const resumeText = await extractResumeText(file);
+      const resumeText = await extractResumeText(file, (status) => {
+        if (status === 'ocr-fallback') {
+          setMessage('الملف يبدو ممسوحًا ضوئيًا أو قديمًا. جارٍ محاولة OCR لاستخراج النص...');
+          return;
+        }
+
+        if (status.startsWith('ocr-page-')) {
+          const pageNumber = status.replace('ocr-page-', '');
+          setMessage(`جارٍ استخدام OCR لاستخراج النص من الصفحة ${pageNumber}...`);
+        }
+      });
 
       if (!resumeText || resumeText.length < 80) {
         throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
