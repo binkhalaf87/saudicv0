@@ -1,41 +1,90 @@
 import { Link } from 'react-router-dom';
 
+const features = [
+  {
+    title: 'تحليل ذكي للسيرة الذاتية',
+    description: 'احصل على قراءة سريعة وواضحة لنقاط القوة والفرص التحسينية داخل السيرة الذاتية.',
+  },
+  {
+    title: 'إدارة نسخ متعددة',
+    description: 'ارفع أكثر من نسخة واحتفظ بكل تحليل داخل حسابك لتجربة صيغ مختلفة لكل وظيفة.',
+  },
+  {
+    title: 'لوحة تحكم واضحة',
+    description: 'تابع سيرك الذاتية، حالتها، وتحليلاتها السابقة من مساحة عمل واحدة مرتبة.',
+  },
+  {
+    title: 'تجربة جاهزة للتوسع',
+    description: 'الأساس الحالي مناسب لإضافة مطابقة الوظائف، التوصيات، والاشتراكات مستقبلاً.',
+  },
+];
+
+const steps = [
+  {
+    title: 'أنشئ حسابك',
+    description: 'ابدأ بحساب بسيط وملف شخصي يوضح المسمى المستهدف، المدينة، والخبرة.',
+  },
+  {
+    title: 'ارفع سيرتك الذاتية',
+    description: 'ادعم ملفات PDF و DOCX ثم ابدأ إدارة النسخ المختلفة من مكان واحد.',
+  },
+  {
+    title: 'راجع التحليل',
+    description: 'شاهد الدرجة، الملخص، نقاط القوة، وفرص التحسين بشكل منظم وسهل القراءة.',
+  },
+];
+
+const plans = [
+  {
+    name: 'Starter',
+    price: 'مجاني',
+    description: 'للتجربة الأولى وإدارة السيرة الذاتية الأساسية.',
+    items: ['رفع سيرة ذاتية', 'تحليل أساسي', 'لوحة تحكم شخصية'],
+  },
+  {
+    name: 'Pro',
+    price: 'قريبًا',
+    description: 'للباحثين عن عمل الذين يريدون تحسينات أعمق وتجارب أكثر.',
+    items: ['تحليلات متعددة', 'مقارنة بين النسخ', 'توصيات مخصصة'],
+  },
+];
+
 export function HomePage() {
   return (
-    <>
+    <div className="card-stack">
       <section className="hero">
         <div className="hero-copy">
-          <span className="eyebrow">منصة SaaS للباحثين عن عمل</span>
           <div className="hero-badge-row">
-            <span className="hero-badge">تحليل ذكي</span>
-            <span className="hero-badge">لوحة تحكم حديثة</span>
-            <span className="hero-badge">إدارة نسخ السيرة</span>
+            <span className="hero-badge">Navbar</span>
+            <span className="hero-badge">Hero</span>
+            <span className="hero-badge">Pricing</span>
           </div>
-          <h1>حوّل سيرتك الذاتية إلى أصل مهني قابل للقياس والتحسين.</h1>
+          <span className="eyebrow">منصة SaaS بسيطة للباحثين عن عمل</span>
+          <h1>حلل سيرتك الذاتية، نظّم نسخك، وادخل مقابلاتك القادمة بثقة أكبر.</h1>
           <p>
-            SaudiCV تمنح الباحث عن عمل تجربة منتج حديثة: رفع السيرة، استخراج النص، تحليل ذكي، وإدارة
-            جميع النسخ والتحليلات من مساحة عمل واحدة واضحة وأنيقة.
+            SaudiCV تساعد الباحث عن عمل على رفع السيرة الذاتية، تحليلها، والرجوع إلى النتائج من لوحة تحكم
+            نظيفة وواضحة بدون تعقيد.
           </p>
           <div className="hero-actions">
             <Link className="primary-button" to="/auth">
-              إنشاء حساب جديد
+              ابدأ الآن
             </Link>
             <Link className="text-link" to="/job-seeker/dashboard">
-              استكشف لوحة التحكم
+              الدخول إلى المنصة
             </Link>
           </div>
           <div className="hero-stats">
             <div>
-              <strong>3x</strong>
-              <span>وضوح أكبر في دورة تحسين السيرة</span>
+              <strong>Navbar</strong>
+              <span>تنقل واضح وسريع بين أقسام المنتج</span>
             </div>
             <div>
               <strong>AI</strong>
-              <span>تحليل يعتمد على محتوى السيرة</span>
+              <span>تحليل مبني على محتوى السيرة نفسها</span>
             </div>
             <div>
-              <strong>Live</strong>
-              <span>رفع وتحليل وإدارة من نفس الحساب</span>
+              <strong>SaaS</strong>
+              <span>واجهة مرتبة، خفيفة، وسهلة الاستخدام</span>
             </div>
           </div>
         </div>
@@ -48,38 +97,39 @@ export function HomePage() {
                 <span />
                 <span />
               </div>
-              <p>Dashboard Preview</p>
+              <p>SaudiCV Platform</p>
             </div>
             <div className="saas-window-body">
               <div className="saas-window-sidebar">
-                <strong>SaudiCV</strong>
+                <strong>Menu</strong>
                 <span>Overview</span>
                 <span>Resumes</span>
                 <span>Analysis</span>
+                <span>Profile</span>
               </div>
               <div className="saas-window-content">
                 <div className="saas-window-summary">
                   <div>
                     <small>آخر تحليل</small>
-                    <strong>84/100</strong>
+                    <strong>84 / 100</strong>
                   </div>
                   <div>
-                    <small>نسخ محفوظة</small>
+                    <small>السير المرفوعة</small>
                     <strong>4</strong>
                   </div>
                 </div>
                 <div className="saas-window-grid">
                   <article>
-                    <small>ملخص</small>
-                    <p>السيرة قوية لكنها تحتاج إنجازات رقمية أوضح.</p>
+                    <small>ملخص سريع</small>
+                    <p>السيرة جيدة، لكنها تحتاج إبراز إنجازات أوضح وأكثر قابلية للقياس.</p>
                   </article>
                   <article>
-                    <small>أفضلية</small>
-                    <p>إدارة كل نسخة مع تحليلها من مكان واحد.</p>
+                    <small>إدارة الملفات</small>
+                    <p>تابع النسخ المختلفة من السيرة الذاتية وتحليلاتها في مكان واحد.</p>
                   </article>
                   <article className="accent">
                     <small>إجراء مقترح</small>
-                    <p>أضف نتائج قابلة للقياس في الخبرات الأخيرة.</p>
+                    <p>أضف نتائج رقمية في الخبرات الأخيرة لرفع جودة السيرة بشكل فوري.</p>
                   </article>
                 </div>
               </div>
@@ -90,52 +140,76 @@ export function HomePage() {
 
       <section className="section-grid">
         <div className="section-heading">
-          <span className="eyebrow">مصمم كمنتج حقيقي</span>
-          <h2>الواجهة لم تعد مجرد صفحات وظيفية، بل مساحة عمل SaaS حديثة تشبه أدوات الإنتاجية الاحترافية.</h2>
+          <span className="eyebrow">Features</span>
+          <h2>كل ما يحتاجه الباحث عن عمل داخل واجهة واحدة بسيطة.</h2>
         </div>
         <div className="feature-grid">
-          <article className="feature-card">
-            <h3>رحلة واضحة</h3>
-            <p>الصفحة الرئيسية تقود المستخدم بسرعة من القيمة إلى التسجيل ثم إلى مساحة العمل الداخلية.</p>
-          </article>
-          <article className="feature-card">
-            <h3>لوحة تحكم مركزة</h3>
-            <p>واجهة داخلية أنيقة تعطي شعور أداة SaaS حديثة بدل صفحات متفرقة أو ثقيلة بصريًا.</p>
-          </article>
-          <article className="feature-card">
-            <h3>تحليل يمكن إدارته</h3>
-            <p>كل سيرة لها تحليلها، مع عرض وحذف ومعاينة، وهذا يدعم تعدد النسخ والسيناريوهات المهنية.</p>
-          </article>
-          <article className="feature-card">
-            <h3>قابل للتوسع</h3>
-            <p>الأساس الحالي مناسب لإضافة مطابقة الوظائف، التوصيات الذكية، وخطط الاشتراك لاحقًا.</p>
-          </article>
+          {features.map((feature) => (
+            <article className="feature-card" key={feature.title}>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </article>
+          ))}
         </div>
       </section>
 
       <section className="journey">
         <div className="section-heading">
-          <span className="eyebrow">لماذا هذا التصميم</span>
-          <h2>المشهد البصري الحالي يركز على الثقة والسرعة والوضوح، وهي أهم سمات أي منصة SaaS ناجحة.</h2>
+          <span className="eyebrow">How It Works</span>
+          <h2>رحلة مختصرة من التسجيل حتى قراءة التحليل النهائي.</h2>
         </div>
         <div className="journey-steps">
-          <div className="step-card">
-            <span>1</span>
-            <h3>واجهة نظيفة</h3>
-            <p>مسافات مدروسة، بطاقات خفيفة، وتدرجات هادئة ترفع جودة الانطباع الأول.</p>
-          </div>
-          <div className="step-card">
-            <span>2</span>
-            <h3>تسلسل واضح</h3>
-            <p>من الصفحة الرئيسية إلى المصادقة ثم لوحة التحكم بدون تشويش أو ازدحام بصري.</p>
-          </div>
-          <div className="step-card">
-            <span>3</span>
-            <h3>إحساس منتج</h3>
-            <p>المظهر العام الآن أقرب لتطبيق SaaS حديث وليس مجرد واجهة تجريبية بسيطة.</p>
-          </div>
+          {steps.map((step, index) => (
+            <div className="step-card" key={step.title}>
+              <span>{index + 1}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </div>
+          ))}
         </div>
       </section>
-    </>
+
+      <section className="section-grid">
+        <div className="section-heading">
+          <span className="eyebrow">Pricing</span>
+          <h2>خطة بداية واضحة الآن، ومسار توسع جاهز لاحقًا.</h2>
+        </div>
+        <div className="feature-grid">
+          {plans.map((plan) => (
+            <article className="feature-card" key={plan.name}>
+              <h3>{plan.name}</h3>
+              <p>
+                <strong>{plan.price}</strong>
+              </p>
+              <p>{plan.description}</p>
+              <ul className="mini-list">
+                {plan.items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="journey">
+        <div className="section-heading">
+          <span className="eyebrow">Footer</span>
+          <h2>ابدأ رحلتك المهنية بواجهة هادئة، واضحة، ومصممة كمنصة SaaS حديثة.</h2>
+          <p>
+            SaudiCV تجمع التسجيل، رفع السيرة الذاتية، وإدارة التحليلات في تجربة موحدة وسهلة على الجوال
+            وسطح المكتب.
+          </p>
+        </div>
+        <div className="hero-actions">
+          <Link className="primary-button" to="/auth">
+            إنشاء حساب
+          </Link>
+          <Link className="text-link" to="/job-seeker/dashboard">
+            فتح لوحة التحكم
+          </Link>
+        </div>
+      </section>
+    </div>
   );
 }
