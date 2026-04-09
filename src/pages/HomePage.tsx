@@ -20,7 +20,7 @@ export function HomePage() {
             <Link className="primary-button" to="/auth">
               إنشاء حساب جديد
             </Link>
-            <Link className="text-link" to="/dashboard">
+            <Link className="text-link" to="/job-seeker/dashboard">
               استكشف لوحة التحكم
             </Link>
           </div>

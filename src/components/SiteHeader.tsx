@@ -17,7 +17,7 @@ export function SiteHeader() {
         <nav className="topbar-links">
           <NavLink to="/">الرئيسية</NavLink>
           <NavLink to="/auth">الدخول</NavLink>
-          <NavLink to="/dashboard">لوحة التحكم</NavLink>
+          <NavLink to="/job-seeker/dashboard">لوحة التحكم</NavLink>
           {!isAuthenticated ? (
             <Link className="ghost-button" to="/auth">
               ابدأ الآن
