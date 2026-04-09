@@ -1,20 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 
 export function AnalysisPage() {
-  const { analyses, resumes, latestAnalysis, latestResume, deleteAnalysis } = useAppContext();
+  const { analyses, resumes, latestResume, deleteAnalysis } = useAppContext();
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const detailsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedResumeId) {
+      const firstResumeWithAnalysis = resumes.find((resume) => analyses.some((item) => item.resume_id === resume.id));
+      setSelectedResumeId(firstResumeWithAnalysis?.id ?? latestResume?.id ?? null);
+    }
+  }, [analyses, latestResume?.id, resumes, selectedResumeId]);
 
   const selectedResume = useMemo(
-    () => resumes.find((item) => item.id === (selectedResumeId ?? latestResume?.id)) ?? latestResume ?? null,
-    [latestResume, resumes, selectedResumeId],
+    () => resumes.find((item) => item.id === selectedResumeId) ?? null,
+    [resumes, selectedResumeId],
   );
 
   const selectedAnalysis = useMemo(
-    () =>
-      analyses.find((item) => item.resume_id === (selectedResume?.id ?? '')) ??
-      (selectedResume?.id === latestResume?.id ? latestAnalysis : null),
-    [analyses, latestAnalysis, latestResume?.id, selectedResume?.id],
+    () => analyses.find((item) => item.resume_id === (selectedResume?.id ?? '')) ?? null,
+    [analyses, selectedResume?.id],
   );
 
   if (selectedResume && selectedResume.upload_status === 'processing') {
@@ -26,7 +32,7 @@ export function AnalysisPage() {
     );
   }
 
-  if (!selectedResume && !latestAnalysis) {
+  if (!selectedResume && analyses.length === 0) {
     return (
       <div className="info-card">
         <h4>لا توجد نتائج تحليل بعد</h4>
@@ -72,12 +78,17 @@ export function AnalysisPage() {
   }
 
   return (
-    <div className="card-stack">
+    <div className="card-stack" ref={detailsRef}>
       <ResumeAnalysisList
         resumes={resumes}
         analyses={analyses}
         selectedResumeId={selectedResume?.id ?? null}
-        onSelect={setSelectedResumeId}
+        onSelect={(resumeId) => {
+          setSelectedResumeId(resumeId);
+          requestAnimationFrame(() => {
+            detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }}
         onDeleteAnalysis={deleteAnalysis}
       />
       <div className="analysis-summary">
