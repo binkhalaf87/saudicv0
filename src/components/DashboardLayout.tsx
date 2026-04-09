@@ -14,10 +14,13 @@ export function DashboardLayout() {
   return (
     <div className="workspace">
       <aside className="sidebar">
-        <div>
-          <p className="sidebar-label">حساب الباحث عن عمل</p>
-          <h3>{profile?.full_name || currentUserEmail}</h3>
-          <p>{profile?.target_role || 'أكمل ملفك المهني'}</p>
+        <div className="sidebar-profile">
+          <div className="sidebar-avatar">{(profile?.full_name || currentUserEmail || 'S').slice(0, 1).toUpperCase()}</div>
+          <div>
+            <p className="sidebar-label">حساب الباحث عن عمل</p>
+            <h3>{profile?.full_name || currentUserEmail}</h3>
+            <p>{profile?.target_role || 'أكمل ملفك المهني'}</p>
+          </div>
         </div>
         <div className="status-chip">
           <span className="status-dot online" />
@@ -43,4 +46,3 @@ export function DashboardLayout() {
     </div>
   );
 }
-
