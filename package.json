@@ -21,6 +21,8 @@
   "homepage": "https://github.com/binkhalaf87/saudicv0#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^5.6.205",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.0"

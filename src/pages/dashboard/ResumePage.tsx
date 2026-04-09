@@ -9,14 +9,16 @@ export function ResumePage() {
     <div className="card-stack">
       <div className="form-card">
         <h3>رفع السيرة الذاتية</h3>
-        <p>يتم رفع الملف إلى Supabase Storage ثم إنشاء سجل في قاعدة البيانات مع تحليل أولي محفوظ.</p>
+        <p>يتم رفع الملف، استخراج النص من محتواه، ثم إرساله إلى تحليل ذكاء اصطناعي فعلي عبر Supabase Edge Function.</p>
         <label className="upload-box">
           <input
             type="file"
             accept=".pdf,.doc,.docx"
             onChange={async (event) => {
-              await handleResumeUpload(event);
-              navigate('/dashboard/analysis');
+              const success = await handleResumeUpload(event);
+              if (success) {
+                navigate('/dashboard/analysis');
+              }
             }}
             disabled={uploadLoading}
           />
@@ -33,4 +35,3 @@ export function ResumePage() {
     </div>
   );
 }
-

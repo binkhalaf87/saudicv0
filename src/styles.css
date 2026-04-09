@@ -255,6 +255,12 @@ a {
   color: #546179;
 }
 
+.analysis-source {
+  margin-top: 10px;
+  color: #6e7a90;
+  font-size: 0.95rem;
+}
+
 .feature-grid,
 .journey-steps,
 .overview-grid,

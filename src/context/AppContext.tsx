@@ -1,4 +1,4 @@
-import {
+﻿import {
   ChangeEvent,
   FormEvent,
   ReactNode,
@@ -9,8 +9,8 @@ import {
   useState,
 } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { generateResumeAnalysis } from '../lib/analysis';
-import { hasSupabaseCredentials, supabase } from '../lib/supabase';
+import { extractResumeText } from '../lib/resume-parser';
+import { supabase } from '../lib/supabase';
 import { AnalysisRecord, Profile, ResumeRecord } from '../types';
 
 type AuthMode = 'signin' | 'signup';
@@ -55,7 +55,7 @@ type AppContextValue = {
   clearMessage: () => void;
   handleAuthSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   handleSaveProfile: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  handleResumeUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  handleResumeUpload: (event: ChangeEvent<HTMLInputElement>) => Promise<boolean>;
   handleSignOut: () => Promise<void>;
 };
 
@@ -208,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (error) {
         setMessage(error.message);
       } else {
-        setMessage('تم إنشاء الحساب. إذا كان تأكيد البريد مفعّلًا في Supabase فافتح بريدك أولًا ثم سجّل الدخول.');
+        setMessage('تم إنشاء الحساب. إذا كان تأكيد البريد مفعّلًا في Supabase فافتح بريدك أولًا ثم سجل الدخول.');
         setAuthMode('signin');
       }
     } else {
@@ -270,74 +270,80 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function handleResumeUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
-    if (!file || !supabase || !session?.user) return;
+    if (!file || !supabase || !session?.user) return false;
 
     setUploadLoading(true);
     setMessage('');
 
-    const fileExt = file.name.split('.').pop() ?? 'pdf';
-    const safeName = file.name.replace(/\s+/g, '-').toLowerCase();
-    const normalizedName = safeName.endsWith(`.${fileExt}`) ? safeName : `${safeName}.${fileExt}`;
-    const filePath = `${session.user.id}/${Date.now()}-${normalizedName}`;
+    try {
+      const fileExt = file.name.split('.').pop() ?? 'pdf';
+      const safeName = file.name.replace(/\s+/g, '-').toLowerCase();
+      const normalizedName = safeName.endsWith(`.${fileExt}`) ? safeName : `${safeName}.${fileExt}`;
+      const filePath = `${session.user.id}/${Date.now()}-${normalizedName}`;
 
-    const uploadResult = await supabase.storage.from('resumes').upload(filePath, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
+      const uploadResult = await supabase.storage.from('resumes').upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-    if (uploadResult.error) {
-      setMessage(uploadResult.error.message);
-      setUploadLoading(false);
-      return;
-    }
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error.message);
+      }
 
-    const resumeInsert = await supabase
-      .from('resumes')
-      .insert({
-        user_id: session.user.id,
-        file_name: file.name,
-        file_path: filePath,
-        mime_type: file.type || null,
-        file_size: file.size,
-        upload_status: 'analyzed',
-      })
-      .select()
-      .single();
+      const resumeInsert = await supabase
+        .from('resumes')
+        .insert({
+          user_id: session.user.id,
+          file_name: file.name,
+          file_path: filePath,
+          mime_type: file.type || null,
+          file_size: file.size,
+          upload_status: 'uploaded',
+        })
+        .select()
+        .single();
 
-    if (resumeInsert.error) {
-      setMessage(resumeInsert.error.message);
-      setUploadLoading(false);
-      return;
-    }
+      if (resumeInsert.error) {
+        throw new Error(resumeInsert.error.message);
+      }
 
-    const resumeRecord = resumeInsert.data as ResumeRecord;
-    const generated = generateResumeAnalysis(file.name, file.size);
-
-    const analysisInsert = await supabase
-      .from('analyses')
-      .insert({
-        resume_id: resumeRecord.id,
-        user_id: session.user.id,
-        score: generated.score,
-        summary: generated.summary,
-        strengths: generated.strengths,
-        improvements: generated.improvements,
-        insights: generated.insights,
-        analysis_source: 'metadata-rules',
-      })
-      .select()
-      .single();
-
-    if (analysisInsert.error) {
-      setMessage(analysisInsert.error.message);
-    } else {
+      const resumeRecord = resumeInsert.data as ResumeRecord;
       setResumes((current) => [resumeRecord, ...current]);
-      setAnalyses((current) => [normalizeAnalysis(analysisInsert.data as AnalysisRecord), ...current]);
-      setMessage('تم رفع السيرة وحفظ نتيجة تحليل أولية في قاعدة البيانات.');
-    }
+      setMessage('تم رفع الملف. جارٍ استخراج النص وإرسال السيرة إلى التحليل الذكي...');
 
-    event.target.value = '';
-    setUploadLoading(false);
+      const resumeText = await extractResumeText(file);
+
+      if (!resumeText || resumeText.length < 80) {
+        throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
+      }
+
+      const invokeResult = await supabase.functions.invoke('analyze-resume', {
+        body: {
+          resumeId: resumeRecord.id,
+          resumeText,
+          targetRole: profile?.target_role ?? null,
+        },
+      });
+
+      if (invokeResult.error) {
+        throw new Error(invokeResult.error.message);
+      }
+
+      const nextAnalysis = normalizeAnalysis(invokeResult.data.analysis as AnalysisRecord);
+
+      setAnalyses((current) => [nextAnalysis, ...current.filter((item) => item.resume_id !== nextAnalysis.resume_id)]);
+      setResumes((current) =>
+        current.map((item) => (item.id === resumeRecord.id ? { ...item, upload_status: 'analyzed' } : item)),
+      );
+      setMessage('تم تحليل محتوى السيرة الذاتية فعليًا وحفظ النتيجة الذكية في قاعدة البيانات.');
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء تحليل السيرة الذاتية.');
+      return false;
+    } finally {
+      event.target.value = '';
+      setUploadLoading(false);
+    }
   }
 
   async function handleSignOut() {

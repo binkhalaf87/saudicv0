@@ -22,6 +22,7 @@ export function AnalysisPage() {
         <div>
           <h3>ملخص التحليل</h3>
           <p>{latestAnalysis.summary}</p>
+          <p className="analysis-source">مصدر التحليل: {latestAnalysis.analysis_source}</p>
         </div>
       </div>
       <div className="analysis-columns">
