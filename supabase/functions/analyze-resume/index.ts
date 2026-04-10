@@ -5,17 +5,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Score is computed by the rule-based ATS engine on the client.
+// AI is only used for narrative: summary, strengths, improvements, insights.
 const analysisSchema = {
-  name: 'resume_analysis',
+  name: 'resume_narrative',
   schema: {
     type: 'object',
     additionalProperties: false,
     properties: {
-      score: {
-        type: 'integer',
-        minimum: 0,
-        maximum: 100,
-      },
       summary: {
         type: 'string',
       },
@@ -44,24 +41,40 @@ const analysisSchema = {
         },
       },
     },
-    required: ['score', 'summary', 'strengths', 'improvements', 'insights'],
+    required: ['summary', 'strengths', 'improvements', 'insights'],
   },
   strict: true,
 };
 
-function buildPrompt(resumeText: string, targetRole: string | null) {
+function buildPrompt(
+  resumeText: string,
+  targetRole: string | null,
+  atsScore: number,
+  sectionScores: Record<string, number>,
+  missingKeywords: string[],
+) {
+  const scoresText = Object.entries(sectionScores)
+    .map(([key, val]) => `  ${key}: ${val}/100`)
+    .join('\n');
+
   return `
-You are an expert Arabic resume reviewer for job seekers in Saudi Arabia.
-Analyze the resume content and return practical, concise feedback in Arabic.
+You are an expert resume coach for job seekers in Saudi Arabia.
+The ATS score has already been computed by a rule-based engine. Do NOT generate a score.
+Your task: write helpful narrative feedback in Arabic based on the data below.
+
+ATS Score (rule-based, do not change): ${atsScore}/100
+Section Scores:
+${scoresText}
+Missing keywords: ${missingKeywords.join(', ') || 'none detected'}
+${targetRole ? `Target role: ${targetRole}` : 'No target role provided.'}
 
 Rules:
-- Score from 0 to 100.
-- Focus on resume quality, clarity, relevance, structure, quantified achievements, and skills alignment.
-- If the text is weak or incomplete, say so directly.
-- Keep strengths and improvements actionable.
-- Insights should be short, specific, and useful.
-- Prefer advice that helps the candidate improve job application readiness.
-${targetRole ? `- The target role is: ${targetRole}` : '- No explicit target role was provided.'}
+- Write summary, strengths, improvements, and insights in Arabic.
+- Be direct and actionable. No filler.
+- Strengths: what the resume does well based on the section scores.
+- Improvements: specific fixes the candidate should make.
+- Insights: 4-5 short analysis points (title + detail + tone: good/warn/neutral).
+- Reference the section scores when explaining weaknesses or strengths.
 
 Resume text:
 """
@@ -121,6 +134,10 @@ Deno.serve(async (req) => {
     const resumeId = body.resumeId as string | undefined;
     const resumeText = (body.resumeText as string | undefined)?.trim();
     const targetRole = (body.targetRole as string | undefined)?.trim() ?? null;
+    // Rule-based scores computed on client by ats-engine.ts — never use AI for scoring
+    const atsScore = (body.atsScore as number | undefined) ?? 60;
+    const sectionScores = (body.sectionScores as Record<string, number> | undefined) ?? {};
+    const missingKeywords = (body.missingKeywords as string[] | undefined) ?? [];
 
     if (!resumeId || !resumeText) {
       return new Response(JSON.stringify({ error: 'resumeId and resumeText are required' }), {
@@ -139,7 +156,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: openAiModel,
-        input: buildPrompt(resumeText, targetRole),
+        input: buildPrompt(resumeText, targetRole, atsScore, sectionScores, missingKeywords),
         text: {
           format: {
             type: 'json_schema',
@@ -173,19 +190,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const analysis = JSON.parse(contentText);
+    const narrative = JSON.parse(contentText);
 
     const { data, error } = await supabase
       .from('analyses')
       .upsert({
         resume_id: resumeId,
         user_id: user.id,
-        score: analysis.score,
-        summary: analysis.summary,
-        strengths: analysis.strengths,
-        improvements: analysis.improvements,
-        insights: analysis.insights,
-        analysis_source: openAiModel,
+        // Score always comes from the rule-based ATS engine — never from AI
+        score: atsScore,
+        summary: narrative.summary,
+        strengths: narrative.strengths,
+        improvements: narrative.improvements,
+        insights: narrative.insights,
+        analysis_source: `ats-engine+${openAiModel}`,
       }, { onConflict: 'resume_id' })
       .select()
       .single();

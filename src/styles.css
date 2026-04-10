@@ -956,6 +956,92 @@ p {
   margin-bottom: 18px;
 }
 
+/* ── Builder tabs ─────────────────────────────────────────────────────── */
+.builder-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid rgba(11, 107, 79, 0.12);
+  border-radius: var(--radius-md);
+  width: fit-content;
+}
+
+.builder-tab {
+  padding: 10px 24px;
+  border-radius: calc(var(--radius-md) - 4px);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.builder-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.builder-tab:hover:not(.active) {
+  background: rgba(11, 107, 79, 0.08);
+  color: var(--primary);
+}
+
+/* ── Builder sidebar ──────────────────────────────────────────────────── */
+.builder-sidebar {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+/* ── Resume preview ───────────────────────────────────────────────────── */
+.preview-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.preview-title {
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 20px;
+}
+
+.preview-section {
+  padding-top: 18px;
+  margin-top: 18px;
+  border-top: 1px solid rgba(11, 107, 79, 0.08);
+}
+
+.preview-section strong {
+  display: block;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.preview-pre {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ink);
+  margin: 0;
+}
+
+.preview-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 40px 0;
+  font-size: 0.95rem;
+}
+
 .resume-preview-sheet {
   padding: 28px;
   border-radius: 28px;

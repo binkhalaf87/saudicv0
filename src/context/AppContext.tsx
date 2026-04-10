@@ -9,6 +9,7 @@
   useState,
 } from 'react';
 import { Session } from '@supabase/supabase-js';
+import { runAtsEngine } from '../lib/ats-engine';
 import { extractResumeText } from '../lib/resume-parser';
 import { supabase } from '../lib/supabase';
 import { AnalysisRecord, Profile, ResumeRecord } from '../types';
@@ -103,6 +104,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     resumeId: string;
     resumeText: string;
     targetRole: string | null;
+    atsScore: number;
+    sectionScores: Record<string, number>;
+    missingKeywords: string[];
   }) {
     if (!supabase) {
       throw new Error('Supabase غير مهيأ داخل التطبيق.');
@@ -375,10 +379,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
       }
 
+      // Run rule-based ATS scoring before calling the edge function
+      const atsResult = runAtsEngine(resumeText, file.name);
+
       const invokeData = await invokeResumeAnalysis({
           resumeId: resumeRecord.id,
           resumeText,
           targetRole: profile?.target_role ?? null,
+          atsScore: atsResult.score,
+          sectionScores: atsResult.section_scores,
+          missingKeywords: atsResult.missing_keywords,
       });
 
       const nextAnalysis = normalizeAnalysis(invokeData.analysis as AnalysisRecord);
@@ -493,10 +503,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error('تعذر استخراج نص كاف من السيرة الذاتية. تأكد أن الملف يحتوي على نص قابل للقراءة.');
       }
 
+      // Run rule-based ATS scoring before calling the edge function
+      const atsResult = runAtsEngine(resumeText, resume.file_name);
+
       const invokeData = await invokeResumeAnalysis({
           resumeId: resume.id,
           resumeText,
           targetRole: profile?.target_role ?? null,
+          atsScore: atsResult.score,
+          sectionScores: atsResult.section_scores,
+          missingKeywords: atsResult.missing_keywords,
       });
 
       const nextAnalysis = normalizeAnalysis(invokeData.analysis as AnalysisRecord);
