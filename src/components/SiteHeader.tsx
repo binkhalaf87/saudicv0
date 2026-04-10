@@ -1,149 +1,103 @@
-import { Link } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
+const copy = {
+  en: {
+    nav: [
+      { href: '/#features', label: 'Features' },
+      { href: '/#platform', label: 'Platform' },
+      { href: '/#system', label: 'Design System' },
+    ],
+    signIn: 'Sign in',
+    start: 'Start free',
+    dashboard: 'Dashboard',
+    recruiter: 'Recruiter',
+    signOut: 'Sign out',
+    role: 'Career Intelligence Platform',
+    language: { en: 'EN', ar: 'AR' },
+  },
+  ar: {
+    nav: [
+      { href: '/#features', label: 'المزايا' },
+      { href: '/#platform', label: 'المنصة' },
+      { href: '/#system', label: 'النظام التصميمي' },
+    ],
+    signIn: 'تسجيل الدخول',
+    start: 'ابدأ مجانا',
+    dashboard: 'لوحة التحكم',
+    recruiter: 'لوحة التوظيف',
+    signOut: 'تسجيل الخروج',
+    role: 'منصة ذكاء مهني',
+    language: { en: 'EN', ar: 'AR' },
+  },
+} as const;
+
 export function SiteHeader() {
-  const { isAuthenticated, handleSignOut, profile } = useAppContext();
-  const firstName = profile?.full_name?.split(' ')[0] ?? '';
+  const { handleSignOut, isAuthenticated, profile, setUiLocale, uiLocale } = useAppContext();
+  const t = copy[uiLocale];
+  const firstName = profile?.full_name?.split(' ')[0] ?? 'User';
 
   return (
-    <>
-      <style>{`
-        .snav-links {
-          display: flex;
-          align-items: center;
-          gap: 28px;
-        }
-        .snav-links a {
-          font-size: 0.92rem;
-          font-weight: 500;
-          color: #475569;
-          text-decoration: none;
-          transition: color 0.18s;
-        }
-        .snav-links a:hover { color: #0f172a; }
+    <div className="site-header-shell">
+      <header className="site-header">
+        <Link to="/" className="brand-lockup">
+          <span className="brand-mark">SCV</span>
+          <span>
+            <strong>SaudiCV</strong>
+            <small>{t.role}</small>
+          </span>
+        </Link>
 
-        .snav-actions {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .snav-ghost {
-          font-size: 0.9rem;
-          font-weight: 500;
-          color: #334155;
-          text-decoration: none;
-          padding: 8px 14px;
-          border-radius: 10px;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          transition: background 0.18s;
-        }
-        .snav-ghost:hover { background: rgba(15,109,115,0.08); color: #0f6d73; }
+        <nav className="header-nav" aria-label="Primary">
+          {t.nav.map((item) => (
+            <a key={item.href} href={item.href}>
+              {item.label}
+            </a>
+          ))}
+          {isAuthenticated ? <NavLink to="/job-seeker/dashboard">{t.dashboard}</NavLink> : null}
+          {isAuthenticated ? <NavLink to="/job-seeker/dashboard/recruiter">{t.recruiter}</NavLink> : null}
+        </nav>
 
-        .snav-cta {
-          font-size: 0.9rem;
-          font-weight: 700;
-          color: #fff;
-          background: linear-gradient(135deg, #0f6d73 0%, #1f8fa5 100%);
-          text-decoration: none;
-          padding: 9px 18px;
-          border-radius: 12px;
-          border: none;
-          cursor: pointer;
-          transition: opacity 0.18s, transform 0.18s, box-shadow 0.18s;
-          box-shadow: 0 4px 14px rgba(15,109,115,0.28);
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .snav-cta:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,109,115,0.36); }
-
-        .snav-user-chip {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(15,109,115,0.08);
-          border-radius: 999px;
-          padding: 5px 12px 5px 5px;
-        }
-        .snav-user-avatar {
-          width: 28px;
-          height: 28px;
-          background: linear-gradient(135deg, #0f6d73, #1f8fa5);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #fff;
-          font-size: 0.72rem;
-          font-weight: 800;
-        }
-        .snav-user-name {
-          font-size: 0.86rem;
-          font-weight: 600;
-          color: #0f6d73;
-        }
-
-        .brand-wordmark {
-          font-size: 1.15rem;
-          font-weight: 800;
-          color: #0f172a;
-          letter-spacing: -0.02em;
-        }
-        .brand-link {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          color: inherit;
-        }
-
-        @media (max-width: 720px) {
-          .snav-links { display: none; }
-          .snav-ghost { display: none; }
-        }
-        @media (max-width: 480px) {
-          .snav-user-name { display: none; }
-        }
-      `}</style>
-
-      <div className="topbar-shell">
-        <header className="topbar">
-          <Link to="/" className="brand-link">
-            <span className="brand-mark">SCV</span>
-            <span className="brand-wordmark">SaudiCV</span>
-          </Link>
-
-          <nav className="snav-links" aria-label="Main navigation">
-            <a href="/#features">المزايا</a>
-            <a href="/#how-it-works">كيف تعمل</a>
-            <a href="/#pricing">الأسعار</a>
-          </nav>
-
-          <div className="snav-actions">
-            {!isAuthenticated ? (
-              <>
-                <Link to="/auth" className="snav-ghost">تسجيل الدخول</Link>
-                <Link to="/auth" className="snav-cta">ابدأ مجاناً</Link>
-              </>
-            ) : (
-              <>
-                {firstName && (
-                  <div className="snav-user-chip">
-                    <span className="snav-user-avatar">{firstName[0]}</span>
-                    <span className="snav-user-name">أهلاً، {firstName}</span>
-                  </div>
-                )}
-                <Link to="/job-seeker/dashboard" className="snav-ghost">لوحة التحكم</Link>
-                <button className="snav-cta" onClick={() => void handleSignOut()} type="button">
-                  تسجيل الخروج
-                </button>
-              </>
-            )}
+        <div className="header-actions">
+          <div className="locale-switch" role="group" aria-label="Language switch">
+            <button
+              className={uiLocale === 'en' ? 'locale-option active' : 'locale-option'}
+              onClick={() => setUiLocale('en')}
+              type="button"
+            >
+              {t.language.en}
+            </button>
+            <button
+              className={uiLocale === 'ar' ? 'locale-option active' : 'locale-option'}
+              onClick={() => setUiLocale('ar')}
+              type="button"
+            >
+              {t.language.ar}
+            </button>
           </div>
-        </header>
-      </div>
-    </>
+
+          {!isAuthenticated ? (
+            <>
+              <Link className="button button-ghost button-sm" to="/auth">
+                {t.signIn}
+              </Link>
+              <Link className="button button-primary button-sm" to="/auth">
+                {t.start}
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="header-user">
+                <span className="header-user-avatar">{firstName[0]?.toUpperCase() ?? 'S'}</span>
+                <span>{firstName}</span>
+              </div>
+              <button className="button button-primary button-sm" onClick={() => void handleSignOut()} type="button">
+                {t.signOut}
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+    </div>
   );
 }

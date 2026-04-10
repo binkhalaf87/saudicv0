@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase';
 import { AnalysisRecord, Profile, ResumeRecord } from '../types';
 
 type AuthMode = 'signin' | 'signup';
+type UiLocale = 'en' | 'ar';
 
 type ProfileDraft = {
   full_name: string;
@@ -49,7 +50,9 @@ type AppContextValue = {
   latestResume: ResumeRecord | null;
   latestAnalysis: AnalysisRecord | null;
   profileCompletion: number;
+  uiLocale: UiLocale;
   setAuthMode: (mode: AuthMode) => void;
+  setUiLocale: (locale: UiLocale) => void;
   setAuthForm: (updater: (current: AuthForm) => AuthForm) => void;
   setProfileDraft: (updater: (current: ProfileDraft) => ProfileDraft) => void;
   clearMessage: () => void;
@@ -94,6 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [saveLoading, setSaveLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [uiLocale, setUiLocale] = useState<UiLocale>('en');
 
   async function invokeResumeAnalysis(payload: {
     resumeId: string;
@@ -594,7 +598,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     latestResume,
     latestAnalysis,
     profileCompletion,
+    uiLocale,
     setAuthMode,
+    setUiLocale,
     setAuthForm: (updater) => setAuthFormState((current) => updater(current)),
     setProfileDraft: (updater) => setProfileDraftState((current) => updater(current)),
     clearMessage: () => setMessage(''),
