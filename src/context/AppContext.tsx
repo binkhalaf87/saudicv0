@@ -112,29 +112,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase غير مهيأ داخل التطبيق.');
     }
 
-    // Ensure we have a fresh, valid session before calling the edge function
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    // Get the current session — try refresh if none found
+    let { data: sessionData } = await supabase.auth.getSession();
 
-    if (sessionError || !sessionData.session) {
+    if (!sessionData.session) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (refreshed.session) sessionData = refreshed;
+    }
+
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
       throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى ثم أعد محاولة التحليل.');
     }
 
-    // Let the SDK manage auth automatically — do not pass Authorization manually
-    // as it can conflict with the SDK's own header in some Supabase JS versions.
-    const invokeResult = await supabase.functions.invoke('analyze-resume', {
-      body: payload,
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+    // Use fetch directly — bypasses any SDK header-merging issues that cause 401
+    const response = await fetch(`${supabaseUrl}/functions/v1/analyze-resume`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'apikey': supabaseAnonKey,
+      },
+      body: JSON.stringify(payload),
     });
 
-    if (invokeResult.error) {
-      // 401 means session expired mid-session — give a clear message
-      const msg = invokeResult.error.message ?? '';
-      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+    if (!response.ok) {
+      const errorBody = await response.text().catch(() => '');
+      if (response.status === 401) {
         throw new Error('انتهت صلاحية الجلسة. سجّل الخروج ثم أعد الدخول وحاول مرة أخرى.');
       }
-      throw new Error(msg || 'حدث خطأ أثناء الاتصال بخدمة التحليل.');
+      throw new Error(`فشل التحليل (${response.status}): ${errorBody || response.statusText}`);
     }
 
-    return invokeResult.data;
+    return response.json() as Promise<{ analysis: unknown }>;
   }
 
   useEffect(() => {
