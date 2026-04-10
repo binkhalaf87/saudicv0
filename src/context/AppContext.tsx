@@ -112,30 +112,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase غير مهيأ داخل التطبيق.');
     }
 
-    const {
-      data: { session: activeSession },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+    // Ensure we have a fresh, valid session before calling the edge function
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError) {
-      throw new Error(sessionError.message);
-    }
-
-    const accessToken = activeSession?.access_token ?? session?.access_token;
-
-    if (!accessToken) {
+    if (sessionError || !sessionData.session) {
       throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى ثم أعد محاولة التحليل.');
     }
 
+    // Let the SDK manage auth automatically — do not pass Authorization manually
+    // as it can conflict with the SDK's own header in some Supabase JS versions.
     const invokeResult = await supabase.functions.invoke('analyze-resume', {
       body: payload,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
     });
 
     if (invokeResult.error) {
-      throw new Error(invokeResult.error.message);
+      // 401 means session expired mid-session — give a clear message
+      const msg = invokeResult.error.message ?? '';
+      if (msg.includes('401') || msg.toLowerCase().includes('unauthorized')) {
+        throw new Error('انتهت صلاحية الجلسة. سجّل الخروج ثم أعد الدخول وحاول مرة أخرى.');
+      }
+      throw new Error(msg || 'حدث خطأ أثناء الاتصال بخدمة التحليل.');
     }
 
     return invokeResult.data;
