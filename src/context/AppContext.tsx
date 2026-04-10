@@ -112,17 +112,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase غير مهيأ داخل التطبيق.');
     }
 
-    // Get the current session — try refresh if none found
-    let { data: sessionData } = await supabase.auth.getSession();
+    // Always force a token refresh immediately before calling the edge function.
+    // getSession() can return a stale token from localStorage that may have expired
+    // during long operations like OCR. refreshSession() guarantees a fresh JWT.
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
 
-    if (!sessionData.session) {
-      const { data: refreshed } = await supabase.auth.refreshSession();
-      if (refreshed.session) sessionData = refreshed;
-    }
+    const accessToken = refreshed.session?.access_token;
 
-    const accessToken = sessionData.session?.access_token;
-
-    if (!accessToken) {
+    if (refreshError || !accessToken) {
       throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى ثم أعد محاولة التحليل.');
     }
 
