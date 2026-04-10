@@ -100,6 +100,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState('');
   const [uiLocale, setUiLocale] = useState<UiLocale>('en');
 
+  async function expireSession(messageText?: string) {
+    setSession(null);
+    setProfile(null);
+    setProfileDraftState(emptyProfileDraft);
+    setResumes([]);
+    setAnalyses([]);
+    setLoading(false);
+    setUploadLoading(false);
+    setSaveLoading(false);
+    setAuthLoading(false);
+    setMessage(messageText ?? 'انتهت صلاحية الجلسة. سجل الدخول مرة أخرى.');
+
+    if (supabase) {
+      await supabase.auth.signOut().catch(() => undefined);
+    }
+  }
+
   async function invokeResumeAnalysis(payload: {
     resumeId: string;
     resumeText: string;
@@ -120,7 +137,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const accessToken = refreshed.session?.access_token;
 
     if (refreshError || !accessToken) {
-      throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى ثم أعد محاولة التحليل.');
+      await expireSession('انتهت صلاحية الجلسة. سجل الخروج ثم أعد الدخول وحاول مرة أخرى.');
+      throw new Error('انتهت صلاحية الجلسة. سجل الخروج ثم أعد الدخول وحاول مرة أخرى.');
     }
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -140,6 +158,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
       if (response.status === 401) {
+        await expireSession('انتهت صلاحية الجلسة. سجل الخروج ثم أعد الدخول وحاول مرة أخرى.');
         throw new Error('انتهت صلاحية الجلسة. سجّل الخروج ثم أعد الدخول وحاول مرة أخرى.');
       }
       throw new Error(`فشل التحليل (${response.status}): ${errorBody || response.statusText}`);
@@ -433,7 +452,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) {
       setMessage(error.message);
     } else {
-      setMessage('تم تسجيل الخروج.');
+      await expireSession('تم تسجيل الخروج.');
     }
   }
 
