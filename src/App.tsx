@@ -8,6 +8,7 @@ import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/HomePage';
 import { JobSeekerAnalysisPage } from './pages/job-seeker/dashboard/AnalysisPage';
 import { JobSeekerBuilderPage } from './pages/job-seeker/dashboard/BuilderPage';
+import { FileManagerPage } from './pages/job-seeker/dashboard/FileManagerPage';
 import { JobSeekerOverviewPage } from './pages/job-seeker/dashboard/OverviewPage';
 import { JobSeekerProfilePage } from './pages/job-seeker/dashboard/ProfilePage';
 import { RecruiterDashboardPage } from './pages/job-seeker/dashboard/RecruiterDashboardPage';
@@ -37,6 +38,7 @@ function AppRoutes() {
           <Route path="/dashboard/resume" element={<Navigate to="/job-seeker/dashboard/resume" replace />} />
           <Route path="/dashboard/analysis" element={<Navigate to="/job-seeker/dashboard/analysis" replace />} />
           <Route path="/dashboard/recruiter" element={<Navigate to="/job-seeker/dashboard/recruiter" replace />} />
+          <Route path="/dashboard/files" element={<Navigate to="/job-seeker/dashboard/files" replace />} />
           <Route
             path="/job-seeker/dashboard"
             element={
@@ -50,6 +52,7 @@ function AppRoutes() {
             <Route path="resume" element={<JobSeekerBuilderPage />} />
             <Route path="analysis" element={<JobSeekerAnalysisPage />} />
             <Route path="recruiter" element={<RecruiterDashboardPage />} />
+            <Route path="files" element={<FileManagerPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
